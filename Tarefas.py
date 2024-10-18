@@ -1,185 +1,390 @@
-#Projeto SGT (Sistema de Gerenciamento de Tarefas)
-
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, ttk
+import pickle
 
-# Lista para armazenar tarefas e descrições
-tarefas = []
-descricoes = []
+class SistemaGerenciamentoTarefas:
+    def __init__(self, root):
+        self.root = root
+        self.root.title(" SGT - Sistema de Gerenciamento de Tarefas")
+        self.root.geometry("900x600")
+        self.root.resizable(False, False)  # Impede o redimensionamento da janela
 
-# Função para ir à tela de adicionar tarefa
-def ir_para_adicionar_tarefa():
-    primeira_tela.pack_forget()  # Esconde a tela inicial
-    adicionar_tela.pack()  # Mostra a tela de adicionar tarefa
+        # Centraliza a janela na tela
+        self.centralizar_janela()
 
-# Função para adicionar uma nova tarefa
-def adicionar_tarefa():
-    titulo = entrada_titulo.get()
-    descricao = entrada_descricao.get("1.0", tk.END).strip()
-    if titulo:
-        tarefas.append(titulo)
-        descricoes.append(descricao)
-        entrada_titulo.delete(0, tk.END)
-        entrada_descricao.delete("1.0", tk.END)
-        messagebox.showinfo("Sucesso", "Tarefa adicionada com sucesso.")
-    else:
-        messagebox.showwarning("Aviso", "Você deve inserir um título para a tarefa.")
+        # Senha padrão
+        self.senha = "12345"
 
-# Função para voltar para a tela inicial
-def voltar_para_inicial():
-    adicionar_tela.pack_forget()  # Esconde a tela de adicionar tarefa
-    lista_tela.pack_forget()  # Esconde a tela de lista de tarefas
-    descricao_tela.pack_forget()  # Esconde a tela de descrição da tarefa
-    primeira_tela.pack()  # Mostra a tela inicial
+        # Carregar as tarefas do arquivo
+        self.tarefas = self.carregar_tarefas()
+        self.tarefa_selecionada = None
+        self.tarefa_selecionada_indice = None
 
-# Função para ir à tela de lista de tarefas
-def ir_para_lista_tarefas():
-    primeira_tela.pack_forget()  # Esconde a tela inicial
-    atualizar_lista_tarefas()  # Atualiza a lista de tarefas
-    lista_tela.pack()  # Mostra a tela de lista de tarefas
+        # Exibe a tela inicial
+        self.tela_inicial()
 
-# Função para atualizar a lista de tarefas
-def atualizar_lista_tarefas():
-    lista_tarefas.delete(0, tk.END)
-    for tarefa in tarefas:
-        lista_tarefas.insert(tk.END, tarefa)
+    def centralizar_janela(self):
+        # Centraliza a janela na tela 
+        width = 900
+        height = 600
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
-# Função para ver e editar a descrição da tarefa selecionada
-def ver_descricao():
-    try:
-        indice_selecionado = lista_tarefas.curselection()[0]
-        tarefa = tarefas[indice_selecionado]
-        descricao = descricoes[indice_selecionado]
-        entrada_titulo_descricao.config(state='normal')
-        entrada_descricao_tarefa.config(state='normal')
-        entrada_titulo_descricao.delete(0, tk.END)
-        entrada_titulo_descricao.insert(0, tarefa)
-        entrada_descricao_tarefa.delete("1.0", tk.END)
-        entrada_descricao_tarefa.insert("1.0", descricao)
-        entrada_titulo_descricao.config(state='normal')
-        entrada_descricao_tarefa.config(state='normal')
-        lista_tela.pack_forget()  # Esconde a tela de lista de tarefas
-        descricao_tela.pack()  # Mostra a tela de descrição da tarefa
-    except IndexError:
-        messagebox.showwarning("Aviso", "Selecione uma tarefa para ver a descrição.")
+    def salvar_tarefas(self):
+       # Salva as tarefas no arquivo
+        with open('tarefas.pkl', 'wb') as file:
+            pickle.dump(self.tarefas, file)
 
-# Função para salvar as edições da tarefa
-def salvar_edicoes():
-    try:
-        indice_selecionado = lista_tarefas.curselection()[0]
-        novo_titulo = entrada_titulo_descricao.get()
-        nova_descricao = entrada_descricao_tarefa.get("1.0", tk.END).strip()
-        if novo_titulo:
-            tarefas[indice_selecionado] = novo_titulo
-            descricoes[indice_selecionado] = nova_descricao
-            atualizar_lista_tarefas()  # Atualiza a lista após edição
-            voltar_para_inicial()  # Volta para a tela inicial
+    def carregar_tarefas(self):
+        # Carrega as tarefas do arquivo
+        try:
+            with open('tarefas.pkl', 'rb') as file:
+                return pickle.load(file)
+        except FileNotFoundError:
+            return []
+
+    def adicionar_botao_voltar(self, comando):
+        # Adiciona um botão 'Voltar' no canto superior esquerdo
+        btn_voltar = tk.Button(self.root, text="Voltar", font=("Arial", 12), command=comando)
+        btn_voltar.place(x=10, y=10)
+
+    def tela_inicial(self):
+       # Exibe a tela inicial
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        # Reinicializa a seleção da tarefa ao voltar para a tela inicial
+        self.tarefa_selecionada = None
+        self.tarefa_selecionada_indice = None
+
+        # Título
+        label = tk.Label(self.root, text="SGT - Sistema de Gerenciamento de Tarefas", font=("Arial", 20))
+        label.pack(pady=40)
+
+        # Botões
+        btn_add_tarefa = tk.Button(self.root, text="Cadastrar Tarefa", font=("Arial", 12), width=20, command=self.tela_adicionar_tarefa)
+        btn_add_tarefa.pack(pady=10)
+
+        btn_ver_tarefas = tk.Button(self.root, text="Ver Todas as Tarefas", font=("Arial", 12), width=20, command=self.tela_lista_tarefas)
+        btn_ver_tarefas.pack(pady=10)
+
+        btn_redefinir_senha = tk.Button(self.root, text="Redefinir Senha", font=("Arial", 12), width=20, command=self.tela_solicitar_senha_redefinir)
+        btn_redefinir_senha.pack(pady=10)
+
+    def tela_adicionar_tarefa(self):
+       # Exibe a tela de adicionar tarefa
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.adicionar_botao_voltar(self.tela_inicial)
+
+        tk.Label(self.root, text="Cadastrar Tarefa", font=("Arial", 16)).pack(pady=5)
+        tk.Label(self.root, text="Nome da Tarefa", font=("Arial", 12)).pack(pady=5)  # Novo rótulo
+        nome_entry = tk.Entry(self.root, font=("Arial", 12))
+        nome_entry.pack(pady=5)
+
+        tk.Label(self.root, text="Tipo da Tarefa", font=("Arial", 12)).pack(pady=5)
+        tipo_var = tk.StringVar()
+        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12))
+        tipo_menu.pack(pady=5)
+
+        tk.Label(self.root, text="Prazo (dd/mm/yyyy)", font=("Arial", 12)).pack(pady=5)
+        prazo_entry = tk.Entry(self.root, font=("Arial", 12))
+        prazo_entry.pack(pady=5)
+
+        tk.Label(self.root, text="Prioridade", font=("Arial", 12)).pack(pady=5)
+        prioridade_var = tk.StringVar()
+        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12))
+        prioridade_menu.pack(pady=5)
+
+        tk.Label(self.root, text="Status", font=("Arial", 12)).pack(pady=5)
+        status_var = tk.StringVar(value="Pendente")
+        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12))
+        status_menu.pack(pady=5)
+
+        tk.Label(self.root, text="Descrição", font=("Arial", 12)).pack(pady=5)
+        descricao_entry = tk.Text(self.root, font=("Arial", 12), height=5, width=40)
+        descricao_entry.pack(pady=5)
+
+        btn_salvar = tk.Button(self.root, text="Salvar Tarefa", font=("Arial", 12), width=20,
+                               command=lambda: self.salvar_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
+        btn_salvar.pack(pady=20)
+
+    def salvar_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
+        # Salva a tarefa na lista e no arquivo 
+        if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
+            messagebox.showerror("Erro", "Preencha todos os campos.")
         else:
-            messagebox.showwarning("Aviso", "Você deve inserir um título para a tarefa.")
-    except IndexError:
-        messagebox.showwarning("Aviso", "Selecione uma tarefa para editar.")
+            self.tarefas.append({"nome": nome, "tipo": tipo, "prazo": prazo, "prioridade": prioridade, "status": status, "descricao": descricao})
+            self.salvar_tarefas()
+            messagebox.showinfo("Sucesso", "Tarefa cadastrada com sucesso!")
+            self.tela_inicial()
 
-# Função para remover a tarefa selecionada
-def remover_tarefa():
-    try:
-        indice_selecionado = lista_tarefas.curselection()[0]
-        del tarefas[indice_selecionado]
-        del descricoes[indice_selecionado]
-        atualizar_lista_tarefas()  # Atualiza a lista após remoção
-    except IndexError:
-        messagebox.showwarning("Aviso", "Selecione uma tarefa para remover.")
+    def tela_lista_tarefas(self):
+        # Exibe a lista de tarefas
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-# Função para editar a tarefa selecionada
-def editar_tarefa():
-    try:
-        indice_selecionado = lista_tarefas.curselection()[0]
-        titulo_novo = simpledialog.askstring("Editar Tarefa", "Novo título da tarefa:")
-        descricao_nova = simpledialog.askstring("Editar Descrição", "Nova descrição da tarefa:")
-        if titulo_novo is not None:
-            tarefas[indice_selecionado] = titulo_novo
-            if descricao_nova is not None:
-                descricoes[indice_selecionado] = descricao_nova
-            atualizar_lista_tarefas()  # Atualiza a lista após edição
-    except IndexError:
-        messagebox.showwarning("Aviso", "Selecione uma tarefa para editar.")
+        self.adicionar_botao_voltar(self.tela_inicial)
 
-# Inicializa a janela principal
-janela = tk.Tk()
-janela.title("Gerenciador de Tarefas")
+        label = tk.Label(self.root, text="Lista de Tarefas", font=("Arial", 16))
+        label.pack(pady=20)
 
-# Configura a geometria da janela para abrir no centro da tela
-largura_janela = 400
-altura_janela = 400
+        frame_lista = tk.Frame(self.root)
+        frame_lista.pack(pady=10)
 
-largura_tela = janela.winfo_screenwidth()
-altura_tela = janela.winfo_screenheight()
+        colunas = ("Nome", "Tipo", "Prazo", "Prioridade", "Status")
+        self.lista_tarefas = ttk.Treeview(frame_lista, columns=colunas, show='headings', height=13)
+        self.lista_tarefas.column("Nome", width=195)
+        self.lista_tarefas.column("Tipo", width=145)
+        self.lista_tarefas.column("Prazo", width=195)
+        self.lista_tarefas.column("Prioridade", width=145)
+        self.lista_tarefas.column("Status", width=195)
 
-pos_x = (largura_tela / 2) - (largura_janela / 2)
-pos_y = (altura_tela / 2) - (altura_janela / 2)
+        for col in colunas:
+            self.lista_tarefas.heading(col, text=col)
 
-janela.geometry(f"{largura_janela}x{altura_janela}+{int(pos_x)}+{int(pos_y)}")
+        self.lista_tarefas.pack()
 
-# Função para criar o botão de voltar no canto superior esquerdo
-def criar_botao_voltar(tela):
-    voltar_btn = tk.Button(tela, text="Voltar", command=voltar_para_inicial, width=10)
-    voltar_btn.pack(side=tk.TOP, anchor='nw', padx=5, pady=5)
+        # Preenche a lista com as tarefas
+        for tarefa in self.tarefas:
+            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"]))
 
-# Tela 1: Tela Inicial
-primeira_tela = tk.Frame(janela)
+        # Restaura a seleção da tarefa se já tiver sido selecionada
+        if self.tarefa_selecionada_indice is not None:
+            self.lista_tarefas.selection_set(self.tarefa_selecionada_indice)
 
-tk.Label(primeira_tela, text="Gerenciador de Tarefas", font=("Arial", 16)).pack(pady=10)
+        # Botões de ações
+        btn_ver_detalhes = tk.Button(self.root, text="Ver Detalhes da Tarefa", font=("Arial", 12), width=20, command=self.tela_detalhes_tarefa)
+        btn_ver_detalhes.pack(pady=10)
 
-tk.Button(primeira_tela, text="Adicionar Tarefa", command=ir_para_adicionar_tarefa).pack(pady=5)
-tk.Button(primeira_tela, text="Ver Todas as Tarefas", command=ir_para_lista_tarefas).pack(pady=5)
+        btn_marcar_concluida = tk.Button(self.root, text="Marcar como Concluída", font=("Arial", 12), width=20, command=self.marcar_concluida)
+        btn_marcar_concluida.pack(pady=10)
 
-primeira_tela.pack()
+        btn_editar_tarefa = tk.Button(self.root, text="Editar Tarefa", font=("Arial", 12), width=20, command=self.ver_descricao_tarefa)
+        btn_editar_tarefa.pack(pady=10)
 
-# Tela 2: Adicionar Tarefa
-adicionar_tela = tk.Frame(janela)
-criar_botao_voltar(adicionar_tela)
+        btn_remover = tk.Button(self.root, text="Remover", font=("Arial", 12), width=20, command=self.tela_solicitar_senha_para_remover)
+        btn_remover.pack(pady=10)
 
-tk.Label(adicionar_tela, text="Adicionar Nova Tarefa", font=("Arial", 16)).pack(pady=10)
+    def ver_descricao_tarefa(self):
+       #  Exibe a tela para editar a tarefa selecionada
+        self.selecionar_tarefa()
+        if self.tarefa_selecionada is None:
+            messagebox.showerror("Erro", "Selecione uma tarefa para editar.")
+            return
+        self.tela_descricao_tarefa()
 
-tk.Label(adicionar_tela, text="Título:").pack()
-entrada_titulo = tk.Entry(adicionar_tela, width=40)
-entrada_titulo.pack(pady=5)
+    def tela_detalhes_tarefa(self):
+        # Exibe uma tela com o nome e a descrição da tarefa selecionada 
+        self.selecionar_tarefa()
+        if self.tarefa_selecionada is None:
+            messagebox.showerror("Erro", "Selecione uma tarefa para ver os detalhes.")
+            return
 
-tk.Label(adicionar_tela, text="Descrição:").pack()
-entrada_descricao = tk.Text(adicionar_tela, height=4, width=40)
-entrada_descricao.pack(pady=5)
+        tarefa = self.tarefas[self.tarefa_selecionada]
 
-tk.Button(adicionar_tela, text="Adicionar Tarefa", command=adicionar_tarefa).pack(pady=10)
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-# Tela 3: Lista de Tarefas
-lista_tela = tk.Frame(janela)
-criar_botao_voltar(lista_tela)
+        self.adicionar_botao_voltar(self.tela_lista_tarefas)
 
-tk.Label(lista_tela, text="Lista de Tarefas", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.root, text="Detalhes da Tarefa", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.root, text=f"Nome: {tarefa['nome']}", font=("Arial", 14)).pack(pady=5)
+        tk.Label(self.root, text="Descrição:", font=("Arial", 14)).pack(pady=5)
 
-lista_tarefas = tk.Listbox(lista_tela, selectmode=tk.SINGLE, width=50, height=10)
-lista_tarefas.pack(pady=10)
+        descricao_entry = tk.Text(self.root, font=("Arial", 12), height=5, width=40)
+        descricao_entry.insert("1.0", tarefa["descricao"])
+        descricao_entry.config(state="disabled")
+        descricao_entry.pack(pady=10)
 
-tk.Button(lista_tela, text="Ver Descrição", command=ver_descricao).pack(pady=5)
-tk.Button(lista_tela, text="Remover Tarefa", command=remover_tarefa).pack(pady=5)
-tk.Button(lista_tela, text="Editar Tarefa", command=editar_tarefa).pack(pady=5)
+    def tela_descricao_tarefa(self):
+       # Exibe a tela para editar os detalhes da tarefa selecionada
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-# Tela 4: Descrição da Tarefa
-descricao_tela = tk.Frame(janela)
-criar_botao_voltar(descricao_tela)
+        self.adicionar_botao_voltar(self.tela_lista_tarefas)
 
-tk.Label(descricao_tela, text="Descrição da Tarefa", font=("Arial", 16)).pack(pady=10)
+        tarefa = self.tarefas[self.tarefa_selecionada]
 
-tk.Label(descricao_tela, text="Título:").pack()
-entrada_titulo_descricao = tk.Entry(descricao_tela, width=40)
-entrada_titulo_descricao.pack(pady=5)
-entrada_titulo_descricao.config(state='normal')
+        tk.Label(self.root, text="Editar Tarefa", font=("Arial", 16)).pack(pady=5)  # Novo rótulo de título
+        tk.Label(self.root, text="Nome da Tarefa", font=("Arial", 12)).pack(pady=5)
+        nome_entry = tk.Entry(self.root, font=("Arial", 12))
+        nome_entry.insert(0, tarefa["nome"])
+        nome_entry.pack(pady=5)
 
-tk.Label(descricao_tela, text="Descrição:").pack()
-entrada_descricao_tarefa = tk.Text(descricao_tela, height=4, width=40)
-entrada_descricao_tarefa.pack(pady=5)
-entrada_descricao_tarefa.config(state='normal')
+        tk.Label(self.root, text="Tipo da Tarefa", font=("Arial", 12)).pack(pady=5)
+        tipo_var = tk.StringVar(value=tarefa["tipo"])
+        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12))
+        tipo_menu.pack(pady=5)
 
-tk.Button(descricao_tela, text="Salvar Alterações", command=salvar_edicoes).pack(pady=10)
+        tk.Label(self.root, text="Prazo", font=("Arial", 12)).pack(pady=5)
+        prazo_entry = tk.Entry(self.root, font=("Arial", 12))
+        prazo_entry.insert(0, tarefa["prazo"])
+        prazo_entry.pack(pady=5)
 
-# Inicializa a interface gráfica
-janela.mainloop()
+        tk.Label(self.root, text="Prioridade", font=("Arial", 12)).pack(pady=5)
+        prioridade_var = tk.StringVar(value=tarefa["prioridade"])
+        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12))
+        prioridade_menu.pack(pady=5)
+
+        tk.Label(self.root, text="Status", font=("Arial", 12)).pack(pady=5)
+        status_var = tk.StringVar(value=tarefa["status"])
+        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12))
+        status_menu.pack(pady=5)
+
+        tk.Label(self.root, text="Descrição", font=("Arial", 12)).pack(pady=5)
+        descricao_entry = tk.Text(self.root, font=("Arial", 12), height=5, width=40)
+        descricao_entry.insert("1.0", tarefa["descricao"])
+        descricao_entry.pack(pady=5)
+
+        btn_salvar = tk.Button(self.root, text="Salvar Alterações", font=("Arial", 12), width=20,
+                               command=lambda: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
+        btn_salvar.pack(pady=20)
+
+    def salvar_edicao_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
+        # Salva as edições feitas na tarefa 
+        if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
+            messagebox.showerror("Erro", "Preencha todos os campos.")
+        else:
+            self.tarefas[self.tarefa_selecionada] = {"nome": nome, "tipo": tipo, "prazo": prazo, "prioridade": prioridade, "status": status, "descricao": descricao}
+            self.salvar_tarefas()
+            messagebox.showinfo("Sucesso", "Tarefa editada com sucesso!")
+            self.tela_lista_tarefas()
+
+    def tela_solicitar_senha_para_remover(self):
+       # Exibe uma tela para solicitar a senha antes de remover a tarefa
+        senha_popup = tk.Toplevel(self.root)
+        senha_popup.title("Autenticação de Senha")
+        senha_popup.geometry("300x150")
+        senha_popup.resizable(False, False)  # Impede o redimensionamento da janela
+
+        # Centraliza a janela de senha
+        self.centralizar_janela_popover(senha_popup)
+
+        tk.Label(senha_popup, text="Digite a senha para remover a tarefa:", font=("Arial", 12)).pack(pady=10)
+        senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
+        senha_entry.pack(pady=5, ipadx=10, ipady=2)
+
+        btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12), command=lambda: self.verificar_senha(senha_entry.get(), senha_popup, self.remover_tarefa))
+        btn_confirmar.pack(pady=10)
+
+    def centralizar_janela_popover(self, popup):
+        # Centraliza a janela pop-up na tela 
+        popup_width = 300
+        popup_height = 150
+        screen_width = popup.winfo_screenwidth()
+        screen_height = popup.winfo_screenheight()
+        x = (screen_width // 2) - (popup_width // 2)
+        y = (screen_height // 2) - (popup_height // 2)
+        popup.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+
+    def verificar_senha(self, senha_digitada, popup, acao_sucesso):
+       # Verifica se a senha digitada está correta e executa uma ação se estiver correta
+        if senha_digitada == self.senha:
+            popup.destroy()
+            acao_sucesso()
+        else:
+            messagebox.showerror("Erro", "Senha incorreta!")
+
+    def remover_tarefa(self):
+       # Remove a tarefa selecionada
+        self.selecionar_tarefa()
+        if self.tarefa_selecionada is None:
+            messagebox.showerror("Erro", "Selecione uma tarefa para remover.")
+            return
+        self.tarefas.pop(self.tarefa_selecionada)
+        self.salvar_tarefas()
+        messagebox.showinfo("Sucesso", "Tarefa removida com sucesso.")
+        self.tela_lista_tarefas()
+
+    def tela_solicitar_senha_redefinir(self):
+       # Solicita a senha antes de redirecionar para a tela de redefinir senha
+        senha_popup = tk.Toplevel(self.root)
+        senha_popup.title("Autenticação de Senha")
+        senha_popup.geometry("300x150")
+        senha_popup.resizable(False, False)  # Impede o redimensionamento da janela
+
+        # Centraliza a janela de redefinição
+        self.centralizar_janela_popover(senha_popup)
+
+        tk.Label(senha_popup, text="Digite a senha para redefinir:", font=("Arial", 12)).pack(pady=10)
+        senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
+        senha_entry.pack(pady=5, ipadx=10, ipady=2)
+
+        btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12), command=lambda: self.verificar_senha(senha_entry.get(), senha_popup, self.tela_redefinir_senha))
+        btn_confirmar.pack(pady=10)
+
+    def tela_redefinir_senha(self):
+       # Exibe a tela de redefinição de senha
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.adicionar_botao_voltar(self.tela_inicial)
+
+        tk.Label(self.root, text="Redefinição de Senha", font=("Arial", 16)).pack(pady=10)
+
+        tk.Label(self.root, text="Senha atual:", font=("Arial", 12)).pack(pady=5)
+        senha_atual_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+        senha_atual_entry.pack(pady=5)
+
+        tk.Label(self.root, text="Nova senha:", font=("Arial", 12)).pack(pady=5)
+        nova_senha_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+        nova_senha_entry.pack(pady=5)
+
+        tk.Label(self.root, text="Confirmar nova senha:", font=("Arial", 12)).pack(pady=5)
+        confirmar_nova_senha_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+        confirmar_nova_senha_entry.pack(pady=5)
+
+        btn_salvar_senha = tk.Button(self.root, text="Redefinir Senha", font=("Arial", 12),
+                                     command=lambda: self.redefinir_senha(senha_atual_entry.get(), nova_senha_entry.get(), confirmar_nova_senha_entry.get()))
+        btn_salvar_senha.pack(pady=20)
+
+    def redefinir_senha(self, senha_atual, nova_senha, confirmar_nova_senha):
+       # Redefine a senha se a senha atual estiver correta e as novas senhas coincidirem
+        if senha_atual == self.senha:
+            if nova_senha == confirmar_nova_senha and nova_senha.strip():
+                self.senha = nova_senha
+                messagebox.showinfo("Sucesso", "Senha redefinida com sucesso!")
+                self.tela_inicial()
+            else:
+                messagebox.showerror("Erro", "As novas senhas não coincidem ou estão em branco!")
+        else:
+            messagebox.showerror("Erro", "Senha atual incorreta!")
+
+    def marcar_concluida(self):
+       # Alterna o status da tarefa entre 'Pendente', 'Parcialmente Concluída' e 'Concluída'
+        self.selecionar_tarefa()
+        if self.tarefa_selecionada is None:
+            messagebox.showerror("Erro", "Selecione uma tarefa para alterar o status.")
+            return
+
+        status_atual = self.tarefas[self.tarefa_selecionada]['status']
+        if status_atual == "Pendente":
+            self.tarefas[self.tarefa_selecionada]['status'] = "Parcialmente Concluída"
+        elif status_atual == "Parcialmente Concluída":
+            self.tarefas[self.tarefa_selecionada]['status'] = "Concluída"
+        else:
+            self.tarefas[self.tarefa_selecionada]['status'] = "Pendente"
+
+        self.salvar_tarefas()
+        messagebox.showinfo("Sucesso", f"Status alterado para {self.tarefas[self.tarefa_selecionada]['status']}.")
+        self.tela_lista_tarefas()
+
+    def selecionar_tarefa(self):
+    # Seleciona uma tarefa na lista de tarefas 
+        try:
+            selected_item = self.lista_tarefas.selection()[0]
+            self.tarefa_selecionada = self.lista_tarefas.index(selected_item)
+            self.tarefa_selecionada_indice = selected_item  # Armazena o identificador da tarefa
+        except IndexError:
+            self.tarefa_selecionada = None
+            self.tarefa_selecionada_indice = None
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = SistemaGerenciamentoTarefas(root)
+    root.mainloop()
