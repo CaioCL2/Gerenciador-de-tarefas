@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import pickle
+import re
 
 class SistemaGerenciamentoTarefas:
     def __init__(self, root):
         self.root = root
-        self.root.title(" SGT - Sistema de Gerenciamento de Tarefas")
+        self.root.title("SGT - Sistema de Gerenciamento de Tarefas")
         self.root.geometry("900x600")
         self.root.resizable(False, False)  # Impede o redimensionamento da janela
 
@@ -34,7 +35,7 @@ class SistemaGerenciamentoTarefas:
         self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def salvar_tarefas(self):
-       # Salva as tarefas no arquivo
+        # Salva as tarefas no arquivo
         with open('tarefas.pkl', 'wb') as file:
             pickle.dump(self.tarefas, file)
 
@@ -52,7 +53,7 @@ class SistemaGerenciamentoTarefas:
         btn_voltar.place(x=10, y=10)
 
     def tela_inicial(self):
-       # Exibe a tela inicial
+        # Exibe a tela inicial
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -75,20 +76,20 @@ class SistemaGerenciamentoTarefas:
         btn_redefinir_senha.pack(pady=10)
 
     def tela_adicionar_tarefa(self):
-       # Exibe a tela de adicionar tarefa
+        # Exibe a tela de adicionar tarefa
         for widget in self.root.winfo_children():
             widget.destroy()
 
         self.adicionar_botao_voltar(self.tela_inicial)
 
         tk.Label(self.root, text="Cadastrar Tarefa", font=("Arial", 16)).pack(pady=5)
-        tk.Label(self.root, text="Nome da Tarefa", font=("Arial", 12)).pack(pady=5)  # Novo rótulo
+        tk.Label(self.root, text="Nome da Tarefa", font=("Arial", 12)).pack(pady=5)
         nome_entry = tk.Entry(self.root, font=("Arial", 12))
         nome_entry.pack(pady=5)
 
         tk.Label(self.root, text="Tipo da Tarefa", font=("Arial", 12)).pack(pady=5)
         tipo_var = tk.StringVar()
-        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12))
+        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12), state="readonly")
         tipo_menu.pack(pady=5)
 
         tk.Label(self.root, text="Prazo (dd/mm/yyyy)", font=("Arial", 12)).pack(pady=5)
@@ -97,12 +98,12 @@ class SistemaGerenciamentoTarefas:
 
         tk.Label(self.root, text="Prioridade", font=("Arial", 12)).pack(pady=5)
         prioridade_var = tk.StringVar()
-        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12))
+        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12), state="readonly")
         prioridade_menu.pack(pady=5)
 
         tk.Label(self.root, text="Status", font=("Arial", 12)).pack(pady=5)
         status_var = tk.StringVar(value="Pendente")
-        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12))
+        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12), state="readonly")
         status_menu.pack(pady=5)
 
         tk.Label(self.root, text="Descrição", font=("Arial", 12)).pack(pady=5)
@@ -110,13 +111,16 @@ class SistemaGerenciamentoTarefas:
         descricao_entry.pack(pady=5)
 
         btn_salvar = tk.Button(self.root, text="Salvar Tarefa", font=("Arial", 12), width=20,
-                               command=lambda: self.salvar_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
+                               command=lambda: self.salvar_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), 
+                                                                  prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
         btn_salvar.pack(pady=20)
 
     def salvar_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
         # Salva a tarefa na lista e no arquivo 
         if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
             messagebox.showerror("Erro", "Preencha todos os campos.")
+        elif not re.match(r"\d{2}/\d{2}/\d{4}", prazo):
+            messagebox.showerror("Erro", "A data deve estar no formato dd/mm/yyyy.")
         else:
             self.tarefas.append({"nome": nome, "tipo": tipo, "prazo": prazo, "prioridade": prioridade, "status": status, "descricao": descricao})
             self.salvar_tarefas()
@@ -171,7 +175,7 @@ class SistemaGerenciamentoTarefas:
         btn_remover.pack(pady=10)
 
     def ver_descricao_tarefa(self):
-       #  Exibe a tela para editar a tarefa selecionada
+        # Exibe a tela para editar a tarefa selecionada
         self.selecionar_tarefa()
         if self.tarefa_selecionada is None:
             messagebox.showerror("Erro", "Selecione uma tarefa para editar.")
@@ -202,7 +206,7 @@ class SistemaGerenciamentoTarefas:
         descricao_entry.pack(pady=10)
 
     def tela_descricao_tarefa(self):
-       # Exibe a tela para editar os detalhes da tarefa selecionada
+        # Exibe a tela para editar os detalhes da tarefa selecionada
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -210,7 +214,7 @@ class SistemaGerenciamentoTarefas:
 
         tarefa = self.tarefas[self.tarefa_selecionada]
 
-        tk.Label(self.root, text="Editar Tarefa", font=("Arial", 16)).pack(pady=5)  # Novo rótulo de título
+        tk.Label(self.root, text="Editar Tarefa", font=("Arial", 16)).pack(pady=5)
         tk.Label(self.root, text="Nome da Tarefa", font=("Arial", 12)).pack(pady=5)
         nome_entry = tk.Entry(self.root, font=("Arial", 12))
         nome_entry.insert(0, tarefa["nome"])
@@ -218,7 +222,7 @@ class SistemaGerenciamentoTarefas:
 
         tk.Label(self.root, text="Tipo da Tarefa", font=("Arial", 12)).pack(pady=5)
         tipo_var = tk.StringVar(value=tarefa["tipo"])
-        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12))
+        tipo_menu = ttk.Combobox(self.root, textvariable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12), state="readonly")
         tipo_menu.pack(pady=5)
 
         tk.Label(self.root, text="Prazo", font=("Arial", 12)).pack(pady=5)
@@ -228,12 +232,12 @@ class SistemaGerenciamentoTarefas:
 
         tk.Label(self.root, text="Prioridade", font=("Arial", 12)).pack(pady=5)
         prioridade_var = tk.StringVar(value=tarefa["prioridade"])
-        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12))
+        prioridade_menu = ttk.Combobox(self.root, textvariable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12), state="readonly")
         prioridade_menu.pack(pady=5)
 
         tk.Label(self.root, text="Status", font=("Arial", 12)).pack(pady=5)
         status_var = tk.StringVar(value=tarefa["status"])
-        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12))
+        status_menu = ttk.Combobox(self.root, textvariable=status_var, values=["Pendente", "Concluída", "Parcialmente Concluída"], font=("Arial", 12), state="readonly")
         status_menu.pack(pady=5)
 
         tk.Label(self.root, text="Descrição", font=("Arial", 12)).pack(pady=5)
@@ -242,21 +246,34 @@ class SistemaGerenciamentoTarefas:
         descricao_entry.pack(pady=5)
 
         btn_salvar = tk.Button(self.root, text="Salvar Alterações", font=("Arial", 12), width=20,
-                               command=lambda: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
+                               command=lambda: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), 
+                                                                         prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
         btn_salvar.pack(pady=20)
 
     def salvar_edicao_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
         # Salva as edições feitas na tarefa 
         if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
             messagebox.showerror("Erro", "Preencha todos os campos.")
+        elif not re.match(r"\d{2}/\d{2}/\d{4}", prazo):
+            messagebox.showerror("Erro", "A data deve estar no formato dd/mm/yyyy.")
         else:
             self.tarefas[self.tarefa_selecionada] = {"nome": nome, "tipo": tipo, "prazo": prazo, "prioridade": prioridade, "status": status, "descricao": descricao}
             self.salvar_tarefas()
             messagebox.showinfo("Sucesso", "Tarefa editada com sucesso!")
             self.tela_lista_tarefas()
 
+    def selecionar_tarefa(self):
+        # Seleciona uma tarefa na lista de tarefas 
+        try:
+            selected_item = self.lista_tarefas.selection()[0]
+            self.tarefa_selecionada = self.lista_tarefas.index(selected_item)
+            self.tarefa_selecionada_indice = selected_item  # Armazena o identificador da tarefa
+        except IndexError:
+            self.tarefa_selecionada = None
+            self.tarefa_selecionada_indice = None
+
     def tela_solicitar_senha_para_remover(self):
-       # Exibe uma tela para solicitar a senha antes de remover a tarefa
+        # Exibe uma tela para solicitar a senha antes de remover a tarefa
         senha_popup = tk.Toplevel(self.root)
         senha_popup.title("Autenticação de Senha")
         senha_popup.geometry("300x150")
@@ -283,7 +300,7 @@ class SistemaGerenciamentoTarefas:
         popup.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
 
     def verificar_senha(self, senha_digitada, popup, acao_sucesso):
-       # Verifica se a senha digitada está correta e executa uma ação se estiver correta
+        # Verifica se a senha digitada está correta e executa uma ação se estiver correta
         if senha_digitada == self.senha:
             popup.destroy()
             acao_sucesso()
@@ -291,7 +308,7 @@ class SistemaGerenciamentoTarefas:
             messagebox.showerror("Erro", "Senha incorreta!")
 
     def remover_tarefa(self):
-       # Remove a tarefa selecionada
+        # Remove a tarefa selecionada
         self.selecionar_tarefa()
         if self.tarefa_selecionada is None:
             messagebox.showerror("Erro", "Selecione uma tarefa para remover.")
@@ -302,7 +319,7 @@ class SistemaGerenciamentoTarefas:
         self.tela_lista_tarefas()
 
     def tela_solicitar_senha_redefinir(self):
-       # Solicita a senha antes de redirecionar para a tela de redefinir senha
+        # Solicita a senha antes de redirecionar para a tela de redefinir senha
         senha_popup = tk.Toplevel(self.root)
         senha_popup.title("Autenticação de Senha")
         senha_popup.geometry("300x150")
@@ -319,7 +336,7 @@ class SistemaGerenciamentoTarefas:
         btn_confirmar.pack(pady=10)
 
     def tela_redefinir_senha(self):
-       # Exibe a tela de redefinição de senha
+        # Exibe a tela de redefinição de senha
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -344,7 +361,7 @@ class SistemaGerenciamentoTarefas:
         btn_salvar_senha.pack(pady=20)
 
     def redefinir_senha(self, senha_atual, nova_senha, confirmar_nova_senha):
-       # Redefine a senha se a senha atual estiver correta e as novas senhas coincidirem
+        # Redefine a senha se a senha atual estiver correta e as novas senhas coincidirem
         if senha_atual == self.senha:
             if nova_senha == confirmar_nova_senha and nova_senha.strip():
                 self.senha = nova_senha
@@ -356,7 +373,7 @@ class SistemaGerenciamentoTarefas:
             messagebox.showerror("Erro", "Senha atual incorreta!")
 
     def marcar_concluida(self):
-       # Alterna o status da tarefa entre 'Pendente', 'Parcialmente Concluída' e 'Concluída'
+        # Alterna o status da tarefa entre 'Pendente', 'Parcialmente Concluída' e 'Concluída'
         self.selecionar_tarefa()
         if self.tarefa_selecionada is None:
             messagebox.showerror("Erro", "Selecione uma tarefa para alterar o status.")
@@ -375,7 +392,7 @@ class SistemaGerenciamentoTarefas:
         self.tela_lista_tarefas()
 
     def selecionar_tarefa(self):
-    # Seleciona uma tarefa na lista de tarefas 
+        # Seleciona uma tarefa na lista de tarefas 
         try:
             selected_item = self.lista_tarefas.selection()[0]
             self.tarefa_selecionada = self.lista_tarefas.index(selected_item)
