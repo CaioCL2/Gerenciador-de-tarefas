@@ -320,7 +320,6 @@ class SistemaGerenciamentoTarefas:
                               command=acao_remover_tarefa)
      btn_confirmar.pack(pady=10)
 
-
     def centralizar_janela_popover(self, popup):
         popup_width = 300
         popup_height = 150
