@@ -285,24 +285,41 @@ class SistemaGerenciamentoTarefas:
             self.tarefa_selecionada_indice = None
 
     def tela_solicitar_senha_para_remover(self):
-        self.selecionar_tarefa()
-        if self.tarefa_selecionada is None:
-            messagebox.showerror("Erro", "Selecione uma tarefa para remover.")
-            return
+     self.selecionar_tarefa()
 
-        senha_popup = tk.Toplevel(self.root)
-        senha_popup.title("Autenticação de Senha")
-        senha_popup.geometry("300x150")
-        senha_popup.resizable(False, False)
+     if self.tarefa_selecionada is None:
+        messagebox.showerror("Erro", "Selecione uma tarefa para remover.")
+        return
 
-        self.centralizar_janela_popover(senha_popup)
+     senha_popup = tk.Toplevel(self.root)
+     senha_popup.title("Autenticação de Senha")
+     senha_popup.geometry("300x150")
+     senha_popup.resizable(False, False)
 
-        tk.Label(senha_popup, text="Digite a senha para remover a tarefa:", font=("Arial", 12)).pack(pady=10)
-        senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
-        senha_entry.pack(pady=5, ipadx=10, ipady=2)
+     self.centralizar_janela_popover(senha_popup)
 
-        btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12), command=lambda: self.verificar_senha(senha_entry.get(), senha_popup, self.remover_tarefa))
-        btn_confirmar.pack(pady=10)
+     tk.Label(senha_popup, text="Digite a senha para remover a tarefa:", font=("Arial", 12)).pack(pady=10)
+
+     senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
+     senha_entry.pack(pady=5, ipadx=10, ipady=2)
+     senha_entry.focus()  # Foco automático no campo de senha
+
+    # Função para verificar a senha e remover a tarefa
+     def acao_remover_tarefa():
+        if senha_entry.get() == self.senha:
+            senha_popup.destroy()  # Fecha a janela de senha
+            self.remover_tarefa()  # Remove a tarefa
+        else:
+            messagebox.showerror("Erro", "Senha incorreta!")
+
+    # Bind para pressionar "Enter" e remover a tarefa
+     senha_entry.bind("<Return>", lambda event: acao_remover_tarefa())
+
+    # Botão para confirmar e remover a tarefa
+     btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12),
+                              command=acao_remover_tarefa)
+     btn_confirmar.pack(pady=10)
+
 
     def centralizar_janela_popover(self, popup):
         popup_width = 300
@@ -327,20 +344,24 @@ class SistemaGerenciamentoTarefas:
         self.tela_lista_tarefas()
 
     def tela_solicitar_senha_redefinir(self):
-        senha_popup = tk.Toplevel(self.root)
-        senha_popup.title("Autenticação de Senha")
+     senha_popup = tk.Toplevel(self.root)
+     senha_popup.title("Autenticação de Senha")
+     senha_popup.geometry("300x150")
+     senha_popup.resizable(False, False)
 
-        senha_popup.geometry("300x150")
-        senha_popup.resizable(False, False)
+     self.centralizar_janela_popover(senha_popup)
 
-        self.centralizar_janela_popover(senha_popup)
+     tk.Label(senha_popup, text="Digite a senha para redefinir:", font=("Arial", 12)).pack(pady=10)
+     senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
+     senha_entry.pack(pady=5, ipadx=10, ipady=2)
+     senha_entry.focus()  # Foco automático no campo de senha
 
-        tk.Label(senha_popup, text="Digite a senha para redefinir:", font=("Arial", 12)).pack(pady=10)
-        senha_entry = tk.Entry(senha_popup, show="*", font=("Arial", 12))
-        senha_entry.pack(pady=5, ipadx=10, ipady=2)
+     senha_entry.bind("<Return>", lambda event: self.verificar_senha(senha_entry.get(), senha_popup, self.tela_redefinir_senha))
 
-        btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12), command=lambda: self.verificar_senha(senha_entry.get(), senha_popup, self.tela_redefinir_senha))
-        btn_confirmar.pack(pady=10)
+     btn_confirmar = tk.Button(senha_popup, text="Confirmar", font=("Arial", 12), 
+                              command=lambda: self.verificar_senha(senha_entry.get(), senha_popup, self.tela_redefinir_senha))
+     btn_confirmar.pack(pady=10)
+
 
     def tela_redefinir_senha(self):
         for widget in self.root.winfo_children():
@@ -366,16 +387,64 @@ class SistemaGerenciamentoTarefas:
                                      command=lambda: self.redefinir_senha(senha_atual_entry.get(), nova_senha_entry.get(), confirmar_nova_senha_entry.get()))
         btn_salvar_senha.pack(pady=20)
 
-    def redefinir_senha(self, senha_atual, nova_senha, confirmar_nova_senha):
-        if senha_atual == self.senha:
-            if nova_senha == confirmar_nova_senha and nova_senha.strip():
+    def tela_redefinir_senha(self):
+     for widget in self.root.winfo_children():
+        widget.destroy()
+
+     self.adicionar_botao_voltar(self.tela_inicial)
+
+     tk.Label(self.root, text="Redefinição de Senha", font=("Arial", 16)).pack(pady=10)
+
+    # Campo da senha atual
+     tk.Label(self.root, text="Senha atual:", font=("Arial", 12)).pack(pady=5)
+     senha_atual_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+     senha_atual_entry.pack(pady=5)
+     senha_atual_entry.focus()  # Foco automático no campo de senha atual
+
+    # Campo da nova senha
+     tk.Label(self.root, text="Nova senha:", font=("Arial", 12)).pack(pady=5)
+     nova_senha_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+     nova_senha_entry.pack(pady=5)
+
+    # Campo para confirmar a nova senha
+     tk.Label(self.root, text="Confirmar nova senha:", font=("Arial", 12)).pack(pady=5)
+     confirmar_nova_senha_entry = tk.Entry(self.root, show="*", font=("Arial", 12))
+     confirmar_nova_senha_entry.pack(pady=5)
+
+    # Função para redefinir a senha com validação
+     def acao_redefinir_senha():
+        senha_atual = senha_atual_entry.get()
+        nova_senha = nova_senha_entry.get()
+        confirmar_nova_senha = confirmar_nova_senha_entry.get()
+
+        # Verifica se algum campo está vazio
+        if not senha_atual.strip() or not nova_senha.strip() or not confirmar_nova_senha.strip():
+            messagebox.showerror("Erro", "Preencha todos os campos!")
+        # Verifica se a senha atual está correta
+        elif senha_atual == self.senha:
+            # Verifica se a nova senha é igual à senha atual
+            if nova_senha == self.senha:
+                messagebox.showerror("Erro", "A nova senha não pode ser a mesma que a senha atual!")
+            # Verifica se as senhas não coincidem
+            elif nova_senha != confirmar_nova_senha:
+                messagebox.showerror("Erro", "As senhas não coincidem!")
+            # Se a nova senha for válida, redefine a senha
+            else:
                 self.senha = nova_senha
                 messagebox.showinfo("Sucesso", "Senha redefinida com sucesso!")
-                self.tela_inicial()
-            else:
-                messagebox.showerror("Erro", "As novas senhas não coincidem ou estão em branco!")
+                self.tela_inicial()  # Retorna à tela inicial
         else:
             messagebox.showerror("Erro", "Senha atual incorreta!")
+
+    # Bind para mover o foco e redefinir senha ao pressionar "Enter"
+     senha_atual_entry.bind("<Return>", lambda event: nova_senha_entry.focus())  # Pressiona "Enter" e vai para nova senha
+     nova_senha_entry.bind("<Return>", lambda event: confirmar_nova_senha_entry.focus())  # Vai para o campo de confirmar senha
+     confirmar_nova_senha_entry.bind("<Return>", lambda event: acao_redefinir_senha())  # Redefine a senha ao pressionar "Enter"
+
+    # Botão para redefinir senha
+     btn_salvar_senha = tk.Button(self.root, text="Redefinir Senha", font=("Arial", 12),
+                                 command=acao_redefinir_senha)
+     btn_salvar_senha.pack(pady=20)
 
     def marcar_concluida(self):
         self.selecionar_tarefa()
@@ -392,7 +461,7 @@ class SistemaGerenciamentoTarefas:
             self.tarefas[self.tarefa_selecionada]['status'] = "Pendente"
 
         self.salvar_tarefas()
-        messagebox.showinfo("Sucesso", f"Status alterado para {self.tarefas[self.tarefa_selecionada]['status']}.")
+        messagebox.showinfo("Sucesso", f"Tarefa marcada como {self.tarefas[self.tarefa_selecionada]['status']}.")
         self.tela_lista_tarefas()
 
 if __name__ == "__main__":
