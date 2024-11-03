@@ -6,7 +6,6 @@ from tkinter import messagebox, ttk
 import pickle
 import re
 from PIL import Image
-from dateutil.relativedelta import relativedelta
 
 class SistemaGerenciamentoTarefas:
     
@@ -26,7 +25,6 @@ class SistemaGerenciamentoTarefas:
         self.tarefas = self.carregar_tarefas()
         self.tarefa_selecionada = None
         self.tarefa_selecionada_indice = None
-        self.tarefa_selecionada_id = None
         
         # Carregar imagem de fundo
         self.background_image = ctk.CTkImage(Image.open("assets/inicial.png"), size=(505, 610))
@@ -116,21 +114,8 @@ class SistemaGerenciamentoTarefas:
             campo_proximo.focus()
 
     def validar_prazo(self, event, campo_prazo, proximo_campo):
-
-        def validar_data(campo_prazo):
-
-            try:
-                dia, mes, ano = map(int, campo_prazo.split('/'))
-                # Tentar criar a data
-                data = datetime(ano, mes, dia)
-                return True  # A data é válida
-            except ValueError:
-                return False 
-            
         if not re.match(r"\d{2}/\d{2}/\d{4}", campo_prazo.get()):
             messagebox.showerror("Erro", "A data deve estar no formato dd/mm/yyyy.")
-        elif not validar_data(campo_prazo):
-            messagebox.showerror("Erro", "Esta data não existe, verifique se o mês está correto ou se o mês tem esta quantidade de dias.")
         else:
             proximo_campo.focus()
 
@@ -191,28 +176,16 @@ class SistemaGerenciamentoTarefas:
         btn_salvar = ctk.CTkButton(frame_principal, text="Salvar Tarefa", font=("Arial", 12), width=200, fg_color="#4A3CB1", hover_color="#3A2B8C", command=lambda: self.salvar_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(),status_var.get(), descricao_entry.get("1.0", "end-1c")))
         btn_salvar.pack(pady=20)
 
-
     def salvar_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
         if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
             messagebox.showerror("Erro", "Preencha todos os campos.")
         elif not re.match(r"\d{2}/\d{2}/\d{4}", prazo):
             messagebox.showerror("Erro", "A data deve estar no formato dd/mm/yyyy.")
-        elif not self.validar_data(prazo):
-            messagebox.showerror("Erro", "Esta data não existe, verifique se o mês está correto ou se o mês tem esta quantidade de dias.")
         else:
             self.tarefas.append({"nome": nome, "tipo": tipo, "prazo": prazo, "prioridade": prioridade, "status": status, "descricao": descricao})
             self.salvar_tarefas()
             messagebox.showinfo("Sucesso", "Tarefa cadastrada com sucesso!")
             self.tela_inicial()
-
-    def validar_data(self, prazo):
-        dia, mes, ano = map(int, prazo.split('/'))
-        try:
-            # Tentar criar a data
-            data = datetime(ano, mes, dia)
-            return True  # A data é válida
-        except ValueError:
-            return False  # A data não é válida
 
     def tela_lista_tarefas(self):
         for widget in self.root.winfo_children():
@@ -225,7 +198,7 @@ class SistemaGerenciamentoTarefas:
         self.adicionar_botao_voltar(self.tela_inicial)
 
         # Título da página
-        label = ctk.CTkLabel(frame_principal, text="Lista de Tarefas", font=("Arial", 20, "bold"), text_color="#312D6F")
+        label = ctk.CTkLabel(frame_principal, text="Lista de Tarefas", font=("Arial", 20, "bold"),     text_color="#312D6F")
         label.pack(pady=(10, 20))
 
         # Frame da lista de tarefas
@@ -247,83 +220,51 @@ class SistemaGerenciamentoTarefas:
 
         self.lista_tarefas.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Armazenar o ID da tarefa selecionada antes de filtrar
-        tarefa_selecionada_id = self.tarefa_selecionada_indice
+        # Inserindo tarefas
+        # for tarefa in self.tarefas:
+        #     self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"],  tarefa["prioridade"], tarefa["status"]))
 
-        # Chamar a função de filtro
         self.filtro_tarefas()
 
-        # Re-selecionar a tarefa após o filtro
-        if tarefa_selecionada_id in self.lista_tarefas.get_children():
-            self.lista_tarefas.selection_set(tarefa_selecionada_id)
+        if self.tarefa_selecionada_indice in self.lista_tarefas.get_children():
+          self.lista_tarefas.selection_set(self.tarefa_selecionada_indice)
+
 
         # Botões para ações na lista
         frame_botoes = ctk.CTkFrame(frame_principal, fg_color="#D6D6F5")
         frame_botoes.pack(pady=(10, 20), padx=20)
 
-        btn_editar_tarefa = ctk.CTkButton(frame_botoes, text="Editar tarefa", font=("Arial", 12), width=150, fg_color="#645CBB", text_color="#FFFFFF", command=self.ver_descricao_tarefa)
+        btn_editar_tarefa = ctk.CTkButton(frame_botoes, text="Editar tarefa", font=("Arial", 12), width=150,   fg_color="#645CBB", text_color="#FFFFFF", command=self.ver_descricao_tarefa)
         btn_editar_tarefa.grid(row=0, column=0, padx=10, pady=10)
 
-        btn_ver_detalhes = ctk.CTkButton(frame_botoes, text="Detalhes", font=("Arial", 12), width=150, fg_color="#645CBB", text_color="#FFFFFF", command=self.tela_detalhes_tarefa)
+        btn_ver_detalhes = ctk.CTkButton(frame_botoes, text="Detalhes", font=("Arial", 12), width=150,     fg_color="#645CBB", text_color="#FFFFFF", command=self.tela_detalhes_tarefa)
         btn_ver_detalhes.grid(row=0, column=1, padx=10, pady=10)
 
-        btn_marcar_concluida = ctk.CTkButton(frame_botoes, text="Alterar estado", font=("Arial", 12), width=150, fg_color="#645CBB", text_color="#FFFFFF", command=self.marcar_concluida)
+        btn_marcar_concluida = ctk.CTkButton(frame_botoes, text="Marcar como concluída", font=("Arial", 12),   width=150, fg_color="#645CBB", text_color="#FFFFFF", command=self.marcar_concluida)
         btn_marcar_concluida.grid(row=1, column=0, padx=10, pady=10)
 
-        btn_remover = ctk.CTkButton(frame_botoes, text="Excluir", font=("Arial", 12), width=150, fg_color="#645CBB", text_color="#FFFFFF", command=self.tela_solicitar_senha_para_remover)
+        btn_remover = ctk.CTkButton(frame_botoes, text="Excluir", font=("Arial", 12), width=150,   fg_color="#645CBB", text_color="#FFFFFF", command=self.tela_solicitar_senha_para_remover)
         btn_remover.grid(row=1, column=1, padx=10, pady=10)
-
-
+        
     def filtro_tarefas(self):
         def validade_restante(tarefa):
             prazo = datetime.strptime(tarefa["prazo"], "%d/%m/%Y")
             hoje = datetime.now()
-
-            dias_restantes = (prazo - hoje).days
-
-            if dias_restantes < 0 and tarefa["status"] != "Concluída":
-                # Calcular a diferença de tempo em anos, meses e dias para tarefas atrasadas
-                total_dias = abs(dias_restantes)
-                anos = total_dias // 365
-                meses = (total_dias % 365) // 30
-                dias = (total_dias % 365) % 30
-
-                resultado = []
-                if anos > 0:
-                    resultado.append(f"{anos} ano(s)")
-                if meses > 0:
-                    resultado.append(f"{meses} mês(es)")
-                if dias > 0:
-                    resultado.append(f"{dias} dia(s)")
-
-                return "Atrasada há " + ", ".join(resultado)
-
+            
+            dias_restantes = (prazo - hoje).days + 1
+                
+            # Definir a flag com base nos dias restantes
+            if dias_restantes <= -1 and tarefa["status"] != "Concluída":
+                return "Atrasada em {} dias".format(abs(dias_restantes))
             elif dias_restantes == 0 and tarefa["status"] != "Concluída":
                 return "Vencendo hoje"
-            
             elif dias_restantes == 1 and tarefa["status"] != "Concluída":
                 return "Vencendo amanhã"
-            
-            elif dias_restantes > 1 and tarefa["status"] != "Concluída":
-                # Calcular a diferença de tempo para o vencimento
-                total_dias = dias_restantes
-                anos = total_dias // 365
-                meses = (total_dias % 365) // 30
-                dias = (total_dias % 365) % 30
-
-                resultado = []
-                if anos > 0:
-                    resultado.append(f"{anos} ano(s)")
-                if meses > 0:
-                    resultado.append(f"{meses} mês(es)")
-                if dias > 0:
-                    resultado.append(f"{dias} dia(s)")
-
-                return "Vencendo em " + ", ".join(resultado)
-
+            elif dias_restantes >= 2 and tarefa["status"] != "Concluída":
+                return "Vencendo em {} dias".format(dias_restantes)
             else:
                 return ""
-
+        
         # Limpa a lista atual
         for item in self.lista_tarefas.get_children():
             self.lista_tarefas.delete(item)
@@ -351,13 +292,13 @@ class SistemaGerenciamentoTarefas:
         # Insere tarefas no Treeview na ordem: atrasadas, vencendo, normais e concluídas
         for tarefa in tarefas_atrasadas:
             self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("atrasada",))
-
+        
         for tarefa in tarefas_vencendo:
             self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("vencendo",))
 
         for tarefa in tarefas_normais:
             self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("normal",))
-
+        
         for tarefa in tarefas_concluidas:
             self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("concluida",))
 
@@ -368,9 +309,8 @@ class SistemaGerenciamentoTarefas:
         self.lista_tarefas.tag_configure("concluida", background="#A1E2B4") # Verde claro
 
         # Mantém a seleção, se houver tarefa selecionada
-        if self.tarefa_selecionada_id in self.lista_tarefas.get_children():
-            self.lista_tarefas.selection_set(self.tarefa_selecionada_id)
-
+        if self.tarefa_selecionada_indice in self.lista_tarefas.get_children():
+            self.lista_tarefas.selection_set(self.tarefa_selecionada_indice)
                 
             
     def ver_descricao_tarefa(self):
@@ -653,20 +593,6 @@ class SistemaGerenciamentoTarefas:
                                  command=acao_redefinir_senha)
      btn_salvar_senha.pack(pady=20)
 
-    def marcar_em_andamento(self, janela):
-            self.tarefas[self.tarefa_selecionada]['status'] = "Em andamento"
-            self.salvar_tarefas()
-            janela.destroy()
-            self.tela_lista_tarefas()
-
-
-    def marcar_como_concluida(self, janela):
-            self.tarefas[self.tarefa_selecionada]['status'] = "Concluída"
-            self.salvar_tarefas()
-            janela.destroy()
-            self.tela_lista_tarefas()
-
-    
     def marcar_concluida(self):
         self.selecionar_tarefa()
         if self.tarefa_selecionada is None:
@@ -674,59 +600,27 @@ class SistemaGerenciamentoTarefas:
             return
 
         status_atual = self.tarefas[self.tarefa_selecionada]['status']
-
+        
         if status_atual == "Pendente":
-            # Criar uma nova janela
-            janela = tk.Toplevel(self.root)
-            janela.title("Alterar Status")
+            resposta = messagebox.askquestion("Alterar Status", "Deseja marcar a tarefa como 'Em andamento' ou 'Concluída'?",
+                                              icon="question", type="yesnocancel", detail="Sim = Em andamento | Não = Concluída")
             
-            # Definir o tamanho da janela e posicioná-la no centro da tela
-            largura, altura = 300, 150
-            pos_x = (janela.winfo_screenwidth() // 2) - (largura // 2)
-            pos_y = (janela.winfo_screenheight() // 2) - (altura // 2)
-            janela.geometry(f"{largura}x{altura}+{pos_x}+{pos_y}")
-
-            # Cor de fundo da janela
-            janela.configure(bg="#D6D6F5")
-
-            # Mensagem
-            label = tk.Label(janela, text="Deseja marcar a tarefa como:", font=("Arial", 12), bg="#D6D6F5", fg="#312D6F")
-            label.pack(pady=10)
-
-            # Botão Em andamento
-            btn_andamento = ctk.CTkButton(
-                janela, text="Em andamento", font=("Arial", 12), width=150,
-                fg_color="#645CBB", text_color="#FFFFFF", command=lambda: self.marcar_em_andamento(janela)
-            )
-            btn_andamento.pack(pady=5)
-
-            # Botão Concluída
-            btn_concluida = ctk.CTkButton(
-                janela, text="Concluída", font=("Arial", 12), width=150,
-                fg_color="#645CBB", text_color="#FFFFFF", command=lambda: self.marcar_como_concluida(janela)
-            )
-            btn_concluida.pack(pady=5)
-
-            # Botão Cancelar
-            btn_cancelar = ctk.CTkButton(
-                janela, text="Cancelar", font=("Arial", 12), width=150,
-                fg_color="#645CBB", text_color="#FFFFFF", command=janela.destroy
-            )
-            btn_cancelar.pack(pady=5)
-
+            if resposta == "yes":
+                self.tarefas[self.tarefa_selecionada]['status'] = "Em andamento"
+            elif resposta == "no":
+                self.tarefas[self.tarefa_selecionada]['status'] = "Concluída"
+                # self.tarefas[self.tarefa_selecionada]['']
+            else:
+                return
+            
         elif status_atual == "Em andamento":
-            # Marcar diretamente como Concluída se já está "Em andamento"
             self.tarefas[self.tarefa_selecionada]['status'] = "Concluída"
-            self.salvar_tarefas()
-            messagebox.showinfo("Sucesso", "Tarefa marcada como Concluída.")
-            self.tela_lista_tarefas()
-
         elif status_atual not in ["Concluída", "Em andamento"]:
-            # Definir como "Pendente" caso o status não seja nenhum dos especificados
             self.tarefas[self.tarefa_selecionada]['status'] = "Pendente"
-            self.salvar_tarefas()
-            self.tela_lista_tarefas()
 
+        self.salvar_tarefas()
+        messagebox.showinfo("Sucesso", f"Tarefa marcada como {self.tarefas[self.tarefa_selecionada]['status']}.")
+        self.tela_lista_tarefas()
 
 if __name__ == "__main__":
     root = tk.Tk()
