@@ -279,15 +279,13 @@ class SistemaGerenciamentoTarefas:
             prazo = datetime.strptime(tarefa["prazo"], "%d/%m/%Y")
             hoje = datetime.now()
 
-            dias_restantes = (prazo - hoje).days
-            dias_restantes = dias_restantes + 1
+            dias_restantes = (prazo - hoje).days + 1
 
             if dias_restantes < 0 and tarefa["status"] != "Concluída":
                 total_dias = abs(dias_restantes)
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
                 dias = (total_dias % 365) % 30
-
                 resultado = []
                 if anos > 0:
                     resultado.append(f"{anos} ano(s)")
@@ -295,21 +293,16 @@ class SistemaGerenciamentoTarefas:
                     resultado.append(f"{meses} mês(es)")
                 if dias > 0:
                     resultado.append(f"{dias} dia(s)")
-
                 return "Atrasada há " + ", ".join(resultado)
-
             elif dias_restantes == 0 and tarefa["status"] != "Concluída":
                 return "Vencendo hoje"
-            
             elif dias_restantes == 1 and tarefa["status"] != "Concluída":
                 return "Vencendo amanhã"
-            
             elif dias_restantes > 1 and tarefa["status"] != "Concluída":
                 total_dias = dias_restantes
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
                 dias = (total_dias % 365) % 30
-
                 resultado = []
                 if anos > 0:
                     resultado.append(f"{anos} ano(s)")
@@ -317,30 +310,34 @@ class SistemaGerenciamentoTarefas:
                     resultado.append(f"{meses} mês(es)")
                 if dias > 0:
                     resultado.append(f"{dias} dia(s)")
-
                 return "Vencendo em " + ", ".join(resultado)
-
             else:
                 return ""
+
+        # Ordena a lista de tarefas de acordo com o prazo e status
+        self.tarefas.sort(key=lambda t: (
+            t["status"] != "Concluída",             # Concluídas no final
+            datetime.strptime(t["prazo"], "%d/%m/%Y"), # Data de prazo
+        ))
 
         # Limpa a lista atual
         for item in self.lista_tarefas.get_children():
             self.lista_tarefas.delete(item)
 
-        # Insere tarefas no Treeview na ordem original da lista self.tarefas
+        # Insere tarefas no Treeview
         for tarefa in self.tarefas:
             validade = validade_restante(tarefa)
-            
+
             # Define a tag com base no status e prazo
             if tarefa["status"] == "Concluída":
                 tag = "concluida"
             elif validade.startswith("Atrasada"):
                 tag = "atrasada"
-            elif validade in ("Vencendo hoje", "Vencendo amanhã", "Vencendo em 2 dia(s)") :
+            elif validade in ("Vencendo hoje", "Vencendo amanhã", "Vencendo em 2 dia(s)"):
                 tag = "vencendo"
             else:
                 tag = "normal"
-            
+
             self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade), tags=(tag,))
 
         # Configura cores para as tags
@@ -352,6 +349,7 @@ class SistemaGerenciamentoTarefas:
         # Mantém a seleção, se houver tarefa selecionada
         if self.tarefa_selecionada_id in self.lista_tarefas.get_children():
             self.lista_tarefas.selection_set(self.tarefa_selecionada_id)
+
                 
             
     def ver_descricao_tarefa(self):
