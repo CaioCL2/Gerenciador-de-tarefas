@@ -280,9 +280,9 @@ class SistemaGerenciamentoTarefas:
             hoje = datetime.now()
 
             dias_restantes = (prazo - hoje).days
+            dias_restantes = dias_restantes + 1
 
             if dias_restantes < 0 and tarefa["status"] != "Concluída":
-                # Calcular a diferença de tempo em anos, meses e dias para tarefas atrasadas
                 total_dias = abs(dias_restantes)
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
@@ -305,7 +305,6 @@ class SistemaGerenciamentoTarefas:
                 return "Vencendo amanhã"
             
             elif dias_restantes > 1 and tarefa["status"] != "Concluída":
-                # Calcular a diferença de tempo para o vencimento
                 total_dias = dias_restantes
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
@@ -328,40 +327,23 @@ class SistemaGerenciamentoTarefas:
         for item in self.lista_tarefas.get_children():
             self.lista_tarefas.delete(item)
 
-        # Organiza as listas conforme a prioridade desejada
-        tarefas_atrasadas = []
-        tarefas_vencendo = []
-        tarefas_normais = []
-        tarefas_concluidas = []
-
-        # Classifica as tarefas em diferentes categorias
+        # Insere tarefas no Treeview na ordem original da lista self.tarefas
         for tarefa in self.tarefas:
-            prazo = datetime.strptime(tarefa["prazo"], "%d/%m/%Y")
-            status = tarefa["status"]
-
-            if status == "Concluída":
-                tarefas_concluidas.append(tarefa)
-            elif prazo < datetime.now():
-                tarefas_atrasadas.append(tarefa)
-            elif 0 <= (prazo - datetime.now()).days <= 1:
-                tarefas_vencendo.append(tarefa)
+            validade = validade_restante(tarefa)
+            
+            # Define a tag com base no status e prazo
+            if tarefa["status"] == "Concluída":
+                tag = "concluida"
+            elif validade.startswith("Atrasada"):
+                tag = "atrasada"
+            elif validade in ("Vencendo hoje", "Vencendo amanhã", "Vencendo em 2 dia(s)") :
+                tag = "vencendo"
             else:
-                tarefas_normais.append(tarefa)
+                tag = "normal"
+            
+            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade), tags=(tag,))
 
-        # Insere tarefas no Treeview na ordem: atrasadas, vencendo, normais e concluídas
-        for tarefa in tarefas_atrasadas:
-            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("atrasada",))
-
-        for tarefa in tarefas_vencendo:
-            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("vencendo",))
-
-        for tarefa in tarefas_normais:
-            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("normal",))
-
-        for tarefa in tarefas_concluidas:
-            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade_restante(tarefa)), tags=("concluida",))
-
-        # Aplicar as tags para mudar as cores
+        # Configura cores para as tags
         self.lista_tarefas.tag_configure("atrasada", background="#FFCCCC")  # Vermelho claro
         self.lista_tarefas.tag_configure("vencendo", background="#FFFFCC")  # Amarelo claro
         self.lista_tarefas.tag_configure("normal", background="#FFFFFF")    # Branco
@@ -370,7 +352,6 @@ class SistemaGerenciamentoTarefas:
         # Mantém a seleção, se houver tarefa selecionada
         if self.tarefa_selecionada_id in self.lista_tarefas.get_children():
             self.lista_tarefas.selection_set(self.tarefa_selecionada_id)
-
                 
             
     def ver_descricao_tarefa(self):
