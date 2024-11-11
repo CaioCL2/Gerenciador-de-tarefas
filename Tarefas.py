@@ -145,11 +145,12 @@ class SistemaGerenciamentoTarefas:
         frame_principal.place(relx=0.5, rely=0.5, anchor="center", relwidth=1, relheight=1)
 
         self.adicionar_botao_voltar(self.tela_inicial)
-        ctk.CTkLabel(frame_principal, text="Cadastrar Tarefa", font=("Arial", 20, "bold"), text_color="#312D6F").pack(pady=(10,20))
+        ctk.CTkLabel(frame_principal, text="Cadastrar Tarefa", font=("Arial", 20, "bold"), text_color="#312D6F").pack(pady=(10, 20))
         
         ctk.CTkLabel(frame_principal, text="Nome", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         nome_entry = ctk.CTkEntry(frame_principal, placeholder_text="Nome da tarefa", font=("Arial", 12), height=35, fg_color="#FFF", text_color="black", border_color="#555")
         nome_entry.pack(fill="x", padx=20, pady=(0, 10))
+        nome_entry.focus_set()  # Define o foco inicial no campo de nome
 
         ctk.CTkLabel(frame_principal, text="Tipo", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         tipo_var = ctk.StringVar()
@@ -181,16 +182,22 @@ class SistemaGerenciamentoTarefas:
         linha_inferior.columnconfigure(0, weight=1)
         linha_inferior.columnconfigure(1, weight=1)
 
-        nome_entry.bind("<Return>", lambda event: self.mover_proximo_campo(event, nome_entry, tipo_menu))
-        tipo_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, tipo_menu, prazo_entry))
-        prazo_entry.bind("<Return>", lambda event: self.validar_prazo(event, prazo_entry, prioridade_menu))
-        prioridade_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, prioridade_menu, status_menu))
-        status_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, status_menu, descricao_entry))
-        descricao_entry.bind("<Return>", lambda event: self.salvar_ao_press_enter(event, nome_entry, tipo_var, prazo_entry, prioridade_var, status_var, descricao_entry))
+        # Define o foco inicial e a navegação entre campos com Enter
+        nome_entry.bind("<Return>", lambda event: tipo_menu.focus_set())
+        tipo_menu.bind("<Return>", lambda event: prioridade_menu.focus_set())
+        prioridade_menu.bind("<Return>", lambda event: descricao_entry.focus_set())
+        descricao_entry.bind("<Return>", lambda event: prazo_entry.focus_set())
+        prazo_entry.bind("<Return>", lambda event: status_menu.focus_set())
+        status_menu.bind("<Return>", lambda event: self.salvar_tarefa(
+            nome_entry.get(), tipo_var.get(), prazo_entry.get(),
+            prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")
+        ))
 
-        btn_salvar = ctk.CTkButton(frame_principal, text="Salvar Tarefa", font=("Arial", 12), width=200, fg_color="#4A3CB1", hover_color="#3A2B8C", command=lambda: self.salvar_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(),status_var.get(), descricao_entry.get("1.0", "end-1c")))
+        btn_salvar = ctk.CTkButton(frame_principal, text="Salvar Tarefa", font=("Arial", 12), width=200, fg_color="#4A3CB1", hover_color="#3A2B8C", command=lambda: self.salvar_tarefa(
+            nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(),
+            status_var.get(), descricao_entry.get("1.0", "end-1c")
+        ))
         btn_salvar.pack(pady=20)
-
 
     def salvar_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
         if not nome or not tipo or not prazo or not prioridade or not status or not descricao.strip():
@@ -235,12 +242,12 @@ class SistemaGerenciamentoTarefas:
         # Configuração da Treeview
         colunas = ("Nome", "Tipo", "Prazo", "Prioridade", "Status", "Alertas")
         self.lista_tarefas = ttk.Treeview(frame_lista, columns=colunas, show='headings', height=13)
-        self.lista_tarefas.column("Nome", width=150, anchor="center")
-        self.lista_tarefas.column("Tipo", width=100, anchor="center")
-        self.lista_tarefas.column("Prazo", width=150, anchor="center")
-        self.lista_tarefas.column("Prioridade", width=100, anchor="center")
-        self.lista_tarefas.column("Status", width=150, anchor="center")
-        self.lista_tarefas.column("Alertas", width=150, anchor="center")
+        self.lista_tarefas.column("Nome", width=250, anchor="center")
+        self.lista_tarefas.column("Tipo", width=50, anchor="center")
+        self.lista_tarefas.column("Prazo", width=50, anchor="center")
+        self.lista_tarefas.column("Prioridade", width=50, anchor="center")
+        self.lista_tarefas.column("Status", width=100, anchor="center")
+        self.lista_tarefas.column("Alertas", width=100, anchor="center")
 
         for col in colunas:
             self.lista_tarefas.heading(col, text=col)
@@ -286,45 +293,42 @@ class SistemaGerenciamentoTarefas:
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
                 dias = (total_dias % 365) % 30
-                resultado = []
                 if anos > 0:
-                    resultado.append(f"{anos} ano(s)")
-                if meses > 0:
-                    resultado.append(f"{meses} mês(es)")
-                if dias > 0:
-                    resultado.append(f"{dias} dia(s)")
-                return "Atrasada há " + ", ".join(resultado)
+                    return f"Atrasada há {anos} ano(s)"
+                elif meses > 0:
+                    return f"Atrasada há {meses} mês(es)"
+                else:
+                    return f"Atrasada há {dias} dia(s)"
             elif dias_restantes == 0 and tarefa["status"] != "Concluída":
-                return "Vencendo hoje"
+                return "Vence hoje"
             elif dias_restantes == 1 and tarefa["status"] != "Concluída":
-                return "Vencendo amanhã"
+                return "Vence amanhã"
             elif dias_restantes > 1 and tarefa["status"] != "Concluída":
                 total_dias = dias_restantes
                 anos = total_dias // 365
                 meses = (total_dias % 365) // 30
                 dias = (total_dias % 365) % 30
-                resultado = []
                 if anos > 0:
-                    resultado.append(f"{anos} ano(s)")
-                if meses > 0:
-                    resultado.append(f"{meses} mês(es)")
-                if dias > 0:
-                    resultado.append(f"{dias} dia(s)")
-                return "Vencendo em " + ", ".join(resultado)
+                    return f"Vence em {anos} ano(s)"
+                elif meses > 0:
+                    return f"Vence em {meses} mês(es)"
+                else:
+                    return f"Vence em {dias} dia(s)"
             else:
                 return ""
 
         # Ordena a lista de tarefas de acordo com o prazo e status
         self.tarefas.sort(key=lambda t: (
-            t["status"] != "Concluída",             # Concluídas no final
-            datetime.strptime(t["prazo"], "%d/%m/%Y"), # Data de prazo
+            t["status"] != "Concluida",              # Coloca concluídas no final
+            datetime.strptime(t["prazo"], "%d/%m/%Y") if t["status"] != "Concluída" else datetime.max,  # Mantém a ordem de prazo para não concluídas
         ))
 
         # Limpa a lista atual
         for item in self.lista_tarefas.get_children():
             self.lista_tarefas.delete(item)
 
-        # Insere tarefas no Treeview
+        # Insere tarefas no Treeview e salva ID das tarefas exibidas
+        ids_tarefas = []
         for tarefa in self.tarefas:
             validade = validade_restante(tarefa)
 
@@ -333,12 +337,13 @@ class SistemaGerenciamentoTarefas:
                 tag = "concluida"
             elif validade.startswith("Atrasada"):
                 tag = "atrasada"
-            elif validade in ("Vencendo hoje", "Vencendo amanhã", "Vencendo em 2 dia(s)"):
+            elif validade in ("Vence hoje", "Vence amanhã", "Vence em 2 dia(s)"):
                 tag = "vencendo"
             else:
                 tag = "normal"
 
-            self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade), tags=(tag,))
+            tarefa_id = self.lista_tarefas.insert("", "end", values=(tarefa["nome"], tarefa["tipo"], tarefa["prazo"], tarefa["prioridade"], tarefa["status"], validade), tags=(tag,))
+            ids_tarefas.append(tarefa_id)
 
         # Configura cores para as tags
         self.lista_tarefas.tag_configure("atrasada", background="#FFCCCC")  # Vermelho claro
@@ -346,8 +351,8 @@ class SistemaGerenciamentoTarefas:
         self.lista_tarefas.tag_configure("normal", background="#FFFFFF")    # Branco
         self.lista_tarefas.tag_configure("concluida", background="#A1E2B4") # Verde claro
 
-        # Mantém a seleção, se houver tarefa selecionada
-        if self.tarefa_selecionada_id in self.lista_tarefas.get_children():
+        # Mantém a seleção, se houver tarefa selecionada e ela ainda existir
+        if self.tarefa_selecionada_id in ids_tarefas:
             self.lista_tarefas.selection_set(self.tarefa_selecionada_id)
 
                 
@@ -409,26 +414,34 @@ class SistemaGerenciamentoTarefas:
         
         ctk.CTkLabel(frame_principal, text="Editar Tarefa", font=("Arial", 20, "bold"), text_color="#312D6F").pack(pady=(10,20))
         
+        # Campo Nome
         ctk.CTkLabel(frame_principal, text="Nome", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         nome_entry = ctk.CTkEntry(frame_principal, placeholder_text="Nome da tarefa", font=("Arial", 12), fg_color="#FFF", text_color="black", border_color="#555")
         nome_entry.insert(0, tarefa["nome"])
         nome_entry.pack(fill="x", padx=20, pady=(0, 10))
 
+        # Define o foco inicial no campo "Nome"
+        nome_entry.focus()
+
+        # Campo Tipo
         ctk.CTkLabel(frame_principal, text="Tipo", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         tipo_var = ctk.StringVar(value=tarefa["tipo"])
         tipo_menu = ctk.CTkComboBox(frame_principal, variable=tipo_var, values=["Pessoal", "Empresarial", "Acadêmico"], font=("Arial", 12), fg_color="#FFF", text_color="black", state="readonly")
         tipo_menu.pack(fill="x", padx=20, pady=(0, 10))
         
+        # Campo Prioridade
         ctk.CTkLabel(frame_principal, text="Prioridade", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         prioridade_var = ctk.StringVar(value=tarefa["prioridade"])
         prioridade_menu = ctk.CTkComboBox(frame_principal, variable=prioridade_var, values=["Baixa", "Média", "Alta"], font=("Arial", 12), state="readonly", fg_color="#FFF", text_color="black")
         prioridade_menu.pack(fill="x", padx=20, pady=(0, 10))
         
+        # Campo Descrição
         ctk.CTkLabel(frame_principal, text="Descrição", font=("Arial", 12), text_color="black", anchor="w").pack(fill="x", padx=20)
         descricao_entry = ctk.CTkTextbox(frame_principal, font=("Arial", 12), height=60, fg_color="#FFF", text_color="black")
         descricao_entry.insert("1.0", tarefa["descricao"])
         descricao_entry.pack(fill="x", padx=20, pady=(0, 10))
 
+        # Linha Inferior com Prazo e Status
         linha_inferior = ctk.CTkFrame(frame_principal, fg_color="#D6D6F5")
         linha_inferior.pack(fill="x", padx=20, pady=(0, 10))
 
@@ -442,16 +455,21 @@ class SistemaGerenciamentoTarefas:
         status_menu = ctk.CTkComboBox(linha_inferior, variable=status_var, values=["Em andamento", "Concluída", "Pendente"], font=("Arial", 12), fg_color="#FFF", text_color="black", state="readonly")
         status_menu.grid(row=1, column=1, sticky="we")
 
-        # Mapear Enter para mover entre os campos na tela de edição
-        nome_entry.bind("<Return>", lambda event: self.mover_proximo_campo(event, nome_entry, tipo_menu))
-        tipo_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, tipo_menu, prazo_entry))
-        prazo_entry.bind("<Return>", lambda event: self.validar_prazo(event, prazo_entry, prioridade_menu))
-        prioridade_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, prioridade_menu, status_menu))
-        status_menu.bind("<Return>", lambda event: self.mover_proximo_campo(event, status_menu, descricao_entry))
+        # Função para mover o foco ao pressionar Enter
+        def mover_proximo_campo(event, campo_atual, proximo_campo):
+            proximo_campo.focus()
+            return "break"  # Interrompe o comportamento padrão do Enter
+
+        # Bind das teclas Enter para mover o foco entre os campos
+        nome_entry.bind("<Return>", lambda event: mover_proximo_campo(event, nome_entry, tipo_menu))
+        tipo_menu.bind("<Return>", lambda event: mover_proximo_campo(event, tipo_menu, prazo_entry))
+        prazo_entry.bind("<Return>", lambda event: mover_proximo_campo(event, prazo_entry, prioridade_menu))
+        prioridade_menu.bind("<Return>", lambda event: mover_proximo_campo(event, prioridade_menu, status_menu))
+        status_menu.bind("<Return>", lambda event: mover_proximo_campo(event, status_menu, descricao_entry))
         descricao_entry.bind("<Return>", lambda event: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
 
-
-        btn_salvar = ctk.CTkButton(frame_principal, text="Salvar Tarefa", font=("Arial", 12), width=200, fg_color="#4A3CB1", hover_color="#3A2B8C", command=lambda: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(),status_var.get(), descricao_entry.get("1.0", "end-1c")))
+        # Botão de salvar
+        btn_salvar = ctk.CTkButton(frame_principal, text="Salvar Tarefa", font=("Arial", 12), width=200, fg_color="#4A3CB1", hover_color="#3A2B8C", command=lambda: self.salvar_edicao_tarefa(nome_entry.get(), tipo_var.get(), prazo_entry.get(), prioridade_var.get(), status_var.get(), descricao_entry.get("1.0", "end-1c")))
         btn_salvar.pack(pady=20)
 
     def salvar_edicao_tarefa(self, nome, tipo, prazo, prioridade, status, descricao):
@@ -700,11 +718,20 @@ class SistemaGerenciamentoTarefas:
             messagebox.showinfo("Sucesso", "Tarefa marcada como Concluída.")
             self.tela_lista_tarefas()
 
+        elif status_atual == "Concluída":
+            # Definir como "Pendente" caso o status não seja nenhum dos especificados
+            self.tarefas[self.tarefa_selecionada]['status'] = "Pendente"
+            self.salvar_tarefas()
+            messagebox.showinfo("Sucesso", "Tarefa em estado pendente.")
+            self.tela_lista_tarefas()
+
         elif status_atual not in ["Concluída", "Em andamento"]:
             # Definir como "Pendente" caso o status não seja nenhum dos especificados
             self.tarefas[self.tarefa_selecionada]['status'] = "Pendente"
             self.salvar_tarefas()
             self.tela_lista_tarefas()
+
+        
 
 
 if __name__ == "__main__":
